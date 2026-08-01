@@ -28,11 +28,11 @@ node {
 
 
                 docker tag my-node-app:latest \
-                876225478418.dkr.ecr.us-east-1.amazonaws.com/my-node-app:latest
+                876225478418.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest
 
 
                 docker push \
-                876225478418.dkr.ecr.us-east-1.amazonaws.com/my-node-app:latest
+                876225478418.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest
                 '''
             }
         }
