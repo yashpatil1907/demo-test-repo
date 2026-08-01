@@ -1,44 +1,37 @@
-pipeline {
+node {
 
-    agent any
-
-    stages {
+    try {
 
         stage('Checkout') {
-            steps {
-                checkout scm
-            }
+            checkout scm
         }
 
         stage('Test') {
-            steps {
-                sh 'npm test'
-            }
+            sh 'npm test'
         }
 
         stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t my-node-app .'
-            }
+            sh 'docker build -t my-node-app .'
         }
 
+
+        emailext(
+            to: 'patilyash1907@gmail.com',
+            subject: "SUCCESS: ${env.JOB_NAME}",
+            body: "Build completed successfully"
+        )
+
+
+    }
+    catch(error) {
+
+        emailext(
+            to: 'patilyash1907@gmail.com',
+            subject: "FAILED: ${env.JOB_NAME}",
+            body: "Build failed. Check Jenkins logs."
+        )
+
+        throw error
     }
 
-}
-
-post {
-    success {
-        emailext(
-            to: "patilyash1907@gmail.com",
-            subject: "Build Success",
-            body: "Build completed successfully."
-        )
-    }
-    failure {
-        emailext(
-            to: "patilyash1907@gmail.com",
-            subject: "Build Failed",
-            body: "Build failed. Please check Jenkins."
-        )
-    }
 }
