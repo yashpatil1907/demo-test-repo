@@ -19,23 +19,23 @@ node {
 
         stage('Push Docker Image to ECR') {
 
-            withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+    withAWS(credentials: 'aws-creds', region: 'us-east-1') {
 
-                sh '''
-                aws ecr get-login-password --region us-east-1 | \
-                docker login --username AWS \
-                --password-stdin 876225478418.dkr.ecr.us-east-1.amazonaws.com
-
-
-                docker tag my-node-app:latest \
-                876225478418.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest
+        sh '''
+        aws ecr get-login-password --region us-east-1 | \
+        docker login --username AWS \
+        --password-stdin 876225478418.dkr.ecr.us-east-1.amazonaws.com
 
 
-                docker push \
-                876225478418.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest
-                '''
-            }
-        }
+        docker tag my-node-app:latest \
+        876225478418.dkr.ecr.us-east-1.amazonaws.com/demo-app:latest
+
+
+        docker push \
+        876225478418.dkr.ecr.us-east-1.amazonaws.com/demo-app:latest
+        '''
+    }
+}
 
 
         emailext(
