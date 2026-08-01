@@ -6,30 +6,56 @@ node {
             checkout scm
         }
 
+
         stage('Test') {
             sh 'npm test'
         }
+
 
         stage('Build Docker Image') {
             sh 'docker build -t my-node-app .'
         }
 
 
+        stage('Push Docker Image to ECR') {
+
+            withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+
+                sh '''
+                aws ecr get-login-password --region us-east-1 | \
+                docker login --username AWS \
+                --password-stdin 876225478418.dkr.ecr.us-east-1.amazonaws.com
+
+
+                docker tag my-node-app:latest \
+                876225478418.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest
+
+
+                docker push \
+                876225478418.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest
+                '''
+            }
+        }
+
+
         emailext(
             to: 'patilyash1907@gmail.com',
             subject: "SUCCESS: ${env.JOB_NAME}",
-            body: "Build completed successfully"
+            body: "Build and ECR Push completed successfully"
         )
 
 
     }
+
     catch(error) {
+
 
         emailext(
             to: 'patilyash1907@gmail.com',
             subject: "FAILED: ${env.JOB_NAME}",
-            body: "Build failed. Check Jenkins logs."
+            body: "Build or ECR Push failed. Check Jenkins logs."
         )
+
 
         throw error
     }
