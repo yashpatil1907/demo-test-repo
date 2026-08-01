@@ -25,3 +25,20 @@ pipeline {
     }
 
 }
+
+post {
+    success {
+        emailext(
+            to: "patilyash1907@gmail.com",
+            subject: "Build Success",
+            body: "Build completed successfully."
+        )
+    }
+    failure {
+        emailext(
+            to: "patilyash1907@gmail.com",
+            subject: "Build Failed",
+            body: "Build failed. Please check Jenkins."
+        )
+    }
+}
