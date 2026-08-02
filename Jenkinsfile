@@ -1,60 +1,74 @@
-node {
+pipeline {
+    agent any
 
-    try {
+    environment {
+        AWS_DEFAULT_REGION = 'us-east-1'
+    }
+
+    stages {
 
         stage('Checkout') {
-            checkout scm
+            steps {
+                checkout scm
+            }
         }
 
         stage('Show Changed Files') {
-            sh '''
-                echo "=============================="
-                echo "Changed Files:"
-                git diff --name-only HEAD~1 HEAD || true
-                echo "=============================="
-            '''
-        }
-
-        stage('Test') {
-            sh 'npm test'
-        }
-
-        stage('Build Docker Image') {
-            sh 'docker build -t my-node-app .'
-        }
-
-        stage('Push Docker Image to ECR') {
-
-            withAWS(credentials: 'aws-creds', region: 'us-east-1') {
-
+            steps {
                 sh '''
-                aws ecr get-login-password --region us-east-1 | \
-                docker login --username AWS \
-                --password-stdin 876225478418.dkr.ecr.us-east-1.amazonaws.com
-
-                docker tag my-node-app:latest \
-                876225478418.dkr.ecr.us-east-1.amazonaws.com/demo-app:latest
-
-                docker push \
-                876225478418.dkr.ecr.us-east-1.amazonaws.com/demo-app:latest
+                    echo "Changed Files:"
+                    git diff --name-only HEAD~1 HEAD || true
                 '''
             }
         }
 
-        emailext(
-            to: 'patilyash1907@gmail.com',
-            subject: "SUCCESS: ${env.JOB_NAME}",
-            body: "Build and ECR Push completed successfully"
-        )
+        stage('Terraform Init') {
+            steps {
+                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                    sh 'terraform init'
+                }
+            }
+        }
 
-    } catch(error) {
+        stage('Terraform Validate') {
+            steps {
+                sh 'terraform validate'
+            }
+        }
 
-        emailext(
-            to: 'patilyash1907@gmail.com',
-            subject: "FAILED: ${env.JOB_NAME}",
-            body: "Build or ECR Push failed. Check Jenkins logs."
-        )
+        stage('Terraform Plan') {
+            steps {
+                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                    sh 'terraform plan -out=tfplan'
+                }
+            }
+        }
 
-        throw error
+        stage('Terraform Apply') {
+            steps {
+                input message: 'Apply Terraform Changes?'
+                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                    sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            emailext(
+                to: 'patilyash1907@gmail.com',
+                subject: "SUCCESS: ${env.JOB_NAME}",
+                body: "Terraform Apply completed successfully."
+            )
+        }
+
+        failure {
+            emailext(
+                to: 'patilyash1907@gmail.com',
+                subject: "FAILED: ${env.JOB_NAME}",
+                body: "Terraform pipeline failed. Check Jenkins logs."
+            )
+        }
     }
 }
