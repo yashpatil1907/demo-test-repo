@@ -16,39 +16,47 @@ pipeline {
         stage('Show Changed Files') {
             steps {
                 sh '''
-                    echo "Changed Files:"
-                    git diff --name-only HEAD~1 HEAD || true
+                echo "Changed Files:"
+                git diff --name-only HEAD~1 HEAD || true
                 '''
             }
         }
 
         stage('Terraform Init') {
             steps {
-                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
-                    sh 'terraform init'
+                dir('TF-file') {
+                    withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                        sh 'terraform init'
+                    }
                 }
             }
         }
 
         stage('Terraform Validate') {
             steps {
-                sh 'terraform validate'
+                dir('TF-file') {
+                    sh 'terraform validate'
+                }
             }
         }
 
         stage('Terraform Plan') {
             steps {
-                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
-                    sh 'terraform plan -out=tfplan'
+                dir('TF-file') {
+                    withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                        sh 'terraform plan -out=tfplan'
+                    }
                 }
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                input message: 'Apply Terraform Changes?'
-                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
-                    sh 'terraform apply -auto-approve tfplan'
+                input message: 'Approve Terraform Apply?'
+                dir('TF-file') {
+                    withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                        sh 'terraform apply -auto-approve tfplan'
+                    }
                 }
             }
         }
@@ -57,17 +65,17 @@ pipeline {
     post {
         success {
             emailext(
-                to: 'patilyash1907@gmail.com',
-                subject: "SUCCESS: ${env.JOB_NAME}",
-                body: "Terraform Apply completed successfully."
+                subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build completed successfully.\n\nJob: ${env.JOB_NAME}\nBuild: ${env.BUILD_NUMBER}",
+                to: "patilyash1907@gmail.com"
             )
         }
 
         failure {
             emailext(
-                to: 'patilyash1907@gmail.com',
-                subject: "FAILED: ${env.JOB_NAME}",
-                body: "Terraform pipeline failed. Check Jenkins logs."
+                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build failed.\n\nPlease check Jenkins console output.",
+                to: "patilyash1907@gmail.com"
             )
         }
     }
