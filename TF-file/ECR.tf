@@ -9,7 +9,7 @@ resource "aws_ecr_repository" "demo_app" {
   }
 
   tags = {
-    Name        = "Demo-App-ECR-1"
+    Name        = "demo-app-v2"
     Environment = "Dev"
   }
 }

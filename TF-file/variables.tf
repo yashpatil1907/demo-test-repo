@@ -11,5 +11,5 @@ variable "key_name" {
 }
 
 variable "repository_name" {
-  default = "demo-app"
+  default = "demo-app-d1"
 }
